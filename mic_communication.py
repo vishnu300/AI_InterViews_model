@@ -1,18 +1,17 @@
 import spacy
 import random
-import time
 import pyttsx3
 import speech_recognition as sr
-from typing import List, Dict
+from typing import List
 
+# Initialize text-to-speech engine
 engine = pyttsx3.init()
-engine.setProperty('rate', 150)     # Speed of speech (default ~200)
-engine.setProperty('volume', 2.0)  # Volume (0.0 to 1.0)
+engine.setProperty('rate', 150)
+engine.setProperty('volume', 1.0)
 
 def speak(text: str):
     engine.say(text)
     engine.runAndWait()
- 
 
 def load_nlp_model(model_name: str = "en_core_web_sm"):
     try:
@@ -42,7 +41,6 @@ POSITIVE_REMARKS = [
     "You’ve demonstrated solid understanding!"
 ]
 
-# Extract skills from job description
 def extract_skills_from_jd(text: str) -> List[str]:
     doc = nlp(text.lower())
     found = set()
@@ -57,7 +55,6 @@ def extract_skills_from_jd(text: str) -> List[str]:
 
     return sorted(found)
 
-# Generate a relevant question for a topic
 def generate_question(topic: str) -> str:
     templates = [
         f"Can you explain your experience with {topic}?",
@@ -68,24 +65,43 @@ def generate_question(topic: str) -> str:
     ]
     return random.choice(templates)
 
-# Simulated comparison to ideal answers (mocked)
 def is_response_good(topic: str, response: str) -> bool:
     keywords = topic.split()
     return all(word.lower() in response.lower() for word in keywords)
 
-# Provide positive reinforcement and suggestions
 def provide_feedback(is_good: bool) -> str:
     if is_good:
         return random.choice(POSITIVE_REMARKS)
     else:
         return "That's a good start! Consider including more specific details or examples."
-    
+
+def get_voice_input(timeout=5) -> str:
+    recognizer = sr.Recognizer()
+    mic = sr.Microphone()
+
+    print("🎤 Listening... (speak clearly)")
+    with mic as source:
+        recognizer.adjust_for_ambient_noise(source)
+        try:
+            audio = recognizer.listen(source, timeout=timeout)
+            response = recognizer.recognize_google(audio)
+            print(f"🗣️ You said: {response}")
+            return response
+        except sr.WaitTimeoutError:
+            print("⏱️ No speech detected (timeout).")
+        except sr.UnknownValueError:
+            print("❌ Could not understand the audio.")
+        except sr.RequestError as e:
+            print(f"🌐 API error: {e}")
+
+    return ""
+
 def run_interview(job_description: str, max_questions: int = 5):
     print("\n--- AI Interview Started ---\n")
     speak("Welcome to your AI-powered interview session.")
 
     topics = extract_skills_from_jd(job_description)
-    
+
     if not topics:
         print("Could not identify relevant topics from job description.")
         speak("Sorry, I could not identify relevant skills in the job description.")
@@ -100,14 +116,13 @@ def run_interview(job_description: str, max_questions: int = 5):
         print(f"\n AI: {question}")
         speak(question)
 
-        response = input(" You: ").strip()
+        response = get_voice_input()
 
         if not response:
             print("!! No response detected. Skipping topic.\n")
             speak("No response detected. Let's skip this one.")
             continue
 
-        # Simulated analysis
         good = is_response_good(topic, response)
         feedback = provide_feedback(good)
         print(f"🤖 AI Feedback: {feedback}")
@@ -117,8 +132,7 @@ def run_interview(job_description: str, max_questions: int = 5):
     print("\n Interview Concluded")
     speak("Great job! The interview is complete. Keep practicing for more confidence.")
 
-
-# Demo mode with optional user JD
+# Run program
 if __name__ == "__main__":
     default_jd = """
     We're hiring a Full Stack Developer with experience in React, Node.js, REST APIs, and AWS.

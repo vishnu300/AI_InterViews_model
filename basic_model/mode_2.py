@@ -77,18 +77,18 @@ def run_interview(job_description: str, max_questions: int = 5):
     topics = extract_skills_from_jd(job_description)
     
     if not topics:
-        print("❌ Could not identify relevant topics from job description.")
+        print("!! Could not identify relevant topics from job description.")
         return
 
-    print(f"✅ Identified Skills: {', '.join(topics)}")
+    print(f"Identified Skills: {', '.join(topics)}")
 
     asked = 0
     for topic in topics[:max_questions]:
-        print(f"\n💬 AI: {generate_question(topic)}")
-        response = input("🧑 You: ").strip()
+        print(f"\n AI: {generate_question(topic)}")
+        response = input(" You: ").strip()
 
         if not response:
-            print("⚠️ No response detected. Skipping topic.\n")
+            print("!! No response detected. Skipping topic.\n")
             continue
 
         # Simulated analysis
@@ -98,7 +98,7 @@ def run_interview(job_description: str, max_questions: int = 5):
         asked += 1
 
     print("\n🎉 Interview Concluded")
-    print("✅ Great job! Keep practicing for more confidence.")
+    print(" Great job! Keep practicing for more confidence.")
 
 # Demo mode with optional user JD
 if __name__ == "__main__":
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     Familiarity with Docker, CI/CD, and Agile methodology is a plus.
     """
 
-    print("📋 Paste your Job Description (press Enter twice to finish):")
+    print(" Paste your Job Description (press Enter twice to finish):")
     lines = []
     while True:
         line = input()
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     jd_input = "\n".join(lines).strip()
     if not jd_input:
-        print("\n📌 Using sample job description.\n")
+        print("\n Using sample job description.\n")
         jd_input = default_jd
 
     run_interview(jd_input)
