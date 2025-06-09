@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interview Bot</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .wave-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 5px solid #2196F3;
+      animation: idlePulse 2s infinite;
+      margin: 20px auto;
+    }
+    .wave-circle.speaking {
+      border-color: #4CAF50;
+      animation: speakingPulse 1s infinite;
+    }
+    @keyframes idlePulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes speakingPulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    input, button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 80%;
+      font-size: 16px;
+    }
+    button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1976D2;
+    }
+    #feedback {
+      margin-top: 10px;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="question">Loading question...</h1>
+    <div id="status">Please wait...</div>
+    <div class="wave-circle" id="voice-wave"></div>
+    <input type="text" id="answer" placeholder="Type your answer here" />
+    <div>
+      <button onclick="submitAnswer()">Submit Answer</button>
+      <button onclick="recordAnswer()">🎤 Speak Answer</button>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <script>
+    function getCSRFToken() {
+      return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
+    let questionIndex = -1;
+    let currentQuestion = "";
+
+    async function fetchNextQuestion(answer = "") {
+      document.getElementById('status').innerText = "Loading next question...";
+      const response = await fetch("/chat/", {
+        method: "POST",
+        body: JSON.stringify({ answer, question_index: questionIndex }),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken()
+        }
+      });
+
+      const data = await response.json();
+      if (data.done) {
+        document.getElementById('question').innerText = data.message;
+        document.getElementById('status').innerText = "Interview complete.";
+        document.getElementById('feedback').innerText = "";
+        return;
+      }
+
+      currentQuestion = data.next_question;
+      questionIndex = data.question_index;
+      document.getElementById('question').innerText = currentQuestion;
+      document.getElementById('feedback').innerText = data.feedback || "";
+      speakQuestion();
+    }
+
+    function speakQuestion() {
+      const wave = document.getElementById('voice-wave');
+      document.getElementById('status').innerText = "Speaking...";
+      wave.classList.add("speaking");
+
+      const utterance = new SpeechSynthesisUtterance(currentQuestion);
+      utterance.onend = () => {
+        wave.classList.remove("speaking");
+        document.getElementById('status').innerText = "Waiting for your response...";
+      };
+      speechSynthesis.speak(utterance);
+    }
+
+    function submitAnswer() {
+      const answer = document.getElementById('answer').value.trim();
+      if (!answer) return;
+      document.getElementById('answer').value = "";
+      fetchNextQuestion(answer);
+    }
+
+    function recordAnswer() {
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.onresult = function(event) {
+        document.getElementById('answer').value = event.results[0][0].transcript;
+      };
+      recognition.start();
+    }
+
+    window.onload = () => fetchNextQuestion();
+  </script>
+</body>
+</html>

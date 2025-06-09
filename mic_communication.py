@@ -125,7 +125,7 @@ def run_interview(job_description: str, max_questions: int = 5):
 
         good = is_response_good(topic, response)
         feedback = provide_feedback(good)
-        print(f"🤖 AI Feedback: {feedback}")
+        print(f"AI Feedback: {feedback}")
         speak(feedback)
         asked += 1
 
