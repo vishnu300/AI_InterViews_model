@@ -85,14 +85,14 @@ def get_voice_input(timeout=5) -> str:
         try:
             audio = recognizer.listen(source, timeout=timeout)
             response = recognizer.recognize_google(audio)
-            print(f"🗣️ You said: {response}")
+            print(f"You said: {response}")
             return response
         except sr.WaitTimeoutError:
             print("⏱️ No speech detected (timeout).")
         except sr.UnknownValueError:
-            print("❌ Could not understand the audio.")
+            print("Could not understand the audio.")
         except sr.RequestError as e:
-            print(f"🌐 API error: {e}")
+            print(f"API error: {e}")
 
     return ""
 
