@@ -7,7 +7,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from datetime import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
@@ -112,3 +111,21 @@ def personal_login(request):
 
 def interview_dashboard(request):
     return render(request, "ai_int_app/index.html")
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
+
+# Store interview results temporarily (demo purpose)
+INTERVIEW_SUMMARY = {}
+
+@csrf_exempt
+@require_POST
+def save_summary(request):
+    global INTERVIEW_SUMMARY
+    data = json.loads(request.body)
+    INTERVIEW_SUMMARY = data.get("responses", {})
+    return JsonResponse({"status": "success"})
+
+def show_summary(request):
+    return render(request, "ai_int_app/summary.html", {"summary": INTERVIEW_SUMMARY})

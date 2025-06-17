@@ -19,12 +19,10 @@
     <button onclick="startInterview()">Start Interview</button>
     <p id="question"></p>
 
-    <div class="speaking-wave" id="wave" style="display: none;">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
+    <div class="speaking-wave circle-wave" id="wave" style="display: none;">
+      <span class="circle"></span>
+      <span class="circle"></span>
+      <span class="circle"></span>
     </div>
 
     <button onclick="recordAnswer()">Voice Answer</button>
@@ -34,7 +32,7 @@
   <script>
     let currentTopicIndex = 0;
     let topics = [];
-    let jobDescription = "AI/ML development, focusing on LLMs, LangChain, or Agentic AI.Strong proficiency in Python and AI frameworks like LangChain, Hugging Face, OpenAI, and other LLM APIs.Hands-on experience in NLP, prompt engineering, embeddings, and vector search.Familiarity with multi-agent AI architectures and retrieval-augmented generation (RAG).Experience with database systems (SQL, NoSQL, or vector databases like Pinecone, ChromaDB, or FAISS).Strong problem-solving and analytical skills.Understanding of API development and integration with backend systems.";
+    let jobDescription = "AI/ML development, focusing on LLMs, LangChain, or Agentic AI. Strong proficiency in Python and AI frameworks like LangChain, Hugging Face, OpenAI, and other LLM APIs. Hands-on experience in NLP, prompt engineering, embeddings, and vector search. Familiarity with multi-agent AI architectures and retrieval-augmented generation (RAG). Experience with database systems (SQL, NoSQL, or vector databases like Pinecone, ChromaDB, or FAISS). Strong problem-solving and analytical skills. Understanding of API development and integration with backend systems.";
 
     function startInterview() {
       document.getElementById("feedback").innerText = "";
@@ -78,45 +76,66 @@
       });
     }
 
-    function recordAnswer() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech recognition is not supported in this browser.");
-        return;
-      }
+let responsesDict = {}; // global dictionary
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.start();
-      document.getElementById("wave").style.display = "flex";
+function recordAnswer() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported");
+    return;
+  }
 
-      recognition.onresult = function (event) {
-        document.getElementById("wave").style.display = "none";
-        const response = event.results[0][0].transcript;
-        const topic = topics[currentTopicIndex];
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.start();
+  document.getElementById("wave").style.display = "flex";
 
-        fetch("/interview/", {
+  recognition.onresult = function (event) {
+    document.getElementById("wave").style.display = "none";
+    const response = event.results[0][0].transcript;
+    const topic = topics[currentTopicIndex];
+
+    responsesDict[topic] = response; // 🔥 SAVE answer per topic
+
+    fetch("/interview/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ response: response, topic: topic }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("feedback").innerText = data.feedback;
+      document.getElementById("feedback").style.backgroundColor = "#d1f2eb";
+
+      speak(data.feedback);
+      currentTopicIndex += 1;
+
+      if (currentTopicIndex >= topics.length) {
+        // 🎯 Final step: send summary and redirect
+        fetch("/save-summary/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ response: response, topic: topic }),
+          body: JSON.stringify({ responses: responsesDict })
         })
-        .then((res) => res.json())
-        .then((data) => {
-          document.getElementById("feedback").innerText = data.feedback;
-          document.getElementById("feedback").style.backgroundColor = "#d1f2eb";
-          speak(data.feedback);
-          currentTopicIndex += 1;
-          setTimeout(() => {
-            askNextQuestion();
-          }, 3000);
+        .then(res => res.json())
+        .then(data => {
+          console.log("Saved summary:", data);
+          window.location.href = "/summary/";
         });
-      };
 
-      recognition.onerror = function () {
-        document.getElementById("wave").style.display = "none";
-        alert("Microphone access failed or speech not recognized.");
-      };
-    }
+      } else {
+        setTimeout(() => {
+          askNextQuestion();
+        }, 3000);
+      }
+    });
+  };
+
+  recognition.onerror = function () {
+    document.getElementById("wave").style.display = "none";
+    alert("Microphone access failed or not recognized.");
+  };
+}
 
     function speak(text) {
       const synth = window.speechSynthesis;
