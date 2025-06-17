@@ -1,10 +1,15 @@
 import json
 import random
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 import spacy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from datetime import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -81,8 +86,29 @@ def interview_api(request):
     return JsonResponse({"error": "Invalid input."}, status=400)
 
 
-
 from django.shortcuts import render
 
 def index(request):
+    return render(request, "ai_int_app/index.html")
+
+def personal_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+
+        credentials = {
+            'interview_01': '123@interview',
+            'interview_02': '122@interview',
+            'interview_03': '1222@interview',
+            'interview_04': '12222@interview'
+        }
+
+        if credentials.get(username) == password:
+            return redirect('interview_dashboard')
+        else:
+            return render(request, 'ai_int_app/branch_login.html', {'error': 'Invalid credentials'})
+
+    return render(request, 'ai_int_app/branch_login.html')
+
+def interview_dashboard(request):
     return render(request, "ai_int_app/index.html")
